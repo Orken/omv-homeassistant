@@ -1,6 +1,6 @@
 {
   "domain": "omvhass",
-  "name": "OpenMediaVault",
+  "name": "OpenMediaVault for Home Assistant",
   "version": "0.1.0",
   "documentation": "https://github.com/tonrepo/openmediavault-hass",
   "requirements": [],
