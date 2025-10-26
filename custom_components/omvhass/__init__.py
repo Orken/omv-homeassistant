@@ -102,9 +102,21 @@ class OMVCoordinator(DataUpdateCoordinator):
             "Cookie": f"{self.cookie_name}={self.token}",
         }
 
-        payload = {"service": "DiskMgmt", "method": "getList", "params": {}}
+        # ✅ paramètres conformes au schéma OMV7
+        payload = {
+            "service": "DiskMgmt",
+            "method": "getList",
+            "params": {
+                "start": 0,
+                "limit": -1,
+                "sortfield": "devicefile",
+                "sortdir": "ASC",
+            },
+        }
+
         async with self.session.post(self.base_url, json=payload, headers=headers) as resp:
             data = await resp.json()
-            if not data or "data" not in data:
+            if not data or "response" not in data:
                 raise Exception(f"Réponse invalide OMV : {data}")
-            return data["data"]
+            return data["response"]
+
