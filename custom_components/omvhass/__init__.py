@@ -1,12 +1,14 @@
 import logging
 import aiohttp
 import async_timeout
+from datetime import timedelta
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 from .const import DOMAIN, PLATFORMS, DEFAULT_SCAN_INTERVAL
 
 _LOGGER = logging.getLogger(__name__)
+
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry):
     """Set up OMV integration from a config entry."""
@@ -34,8 +36,10 @@ class OMVCoordinator(DataUpdateCoordinator):
         self.host = config["host"]
         self.username = config["username"]
         self.password = config["password"]
+        # Tu peux changer rpc.php → webapi/ si besoin
         self.base_url = f"http://{self.host}/rpc.php"
         self.token = None
+        self.cookie_name = None
 
     async def _async_update_data(self):
         """Fetch data from OMV."""
@@ -43,7 +47,14 @@ class OMVCoordinator(DataUpdateCoordinator):
             async with async_timeout.timeout(10):
                 if not self.token:
                     await self._login()
-                disks = await self._get_disks()
+                try:
+                    disks = await self._get_disks()
+                except Exception:
+                    # Si la session a expiré, on réessaie une fois
+                    _LOGGER.warning("Session OMV expirée, reconnexion...")
+                    await self._login()
+                    disks = await self._get_disks()
+
                 _LOGGER.debug("OMV data retrieved: %s", disks)
                 return disks
         except Exception as err:
@@ -51,25 +62,49 @@ class OMVCoordinator(DataUpdateCoordinator):
 
     async def _login(self):
         """Authenticate to OMV."""
+        headers = {"X-Requested-With": "XMLHttpRequest"}
         payload = {
             "service": "Session",
             "method": "login",
             "params": {"username": self.username, "password": self.password},
         }
-        async with self.session.post(self.base_url, json=payload) as resp:
+
+        async with self.session.post(self.base_url, json=payload, headers=headers) as resp:
             data = await resp.json()
-            if not data.get("response", False):
+            response = data.get("response", {})
+
+            # Vérifie que l'auth a réussi
+            if not response or not response.get("authenticated", False):
                 raise Exception("Authentification OMV échouée")
-            cookie = resp.cookies.get("PHPSESSID")
-            if not cookie:
+
+            # Cherche un cookie de session
+            cookies = resp.cookies
+            session_cookie = (
+                cookies.get("OPENMEDIAVAULT-SESSIONID")
+                or cookies.get("PHPSESSID")
+            )
+
+            if not session_cookie:
+                _LOGGER.error("Cookies reçus : %s", cookies)
                 raise Exception("Aucun cookie de session retourné")
-            self.token = cookie.value
-            _LOGGER.info("Connexion OMV réussie (%s)", self.host)
+
+            self.token = session_cookie.value
+            self.cookie_name = session_cookie.key
+            _LOGGER.info("Connexion OMV réussie (%s, cookie=%s)", self.host, self.cookie_name)
 
     async def _get_disks(self):
         """Retrieve disks status from OMV."""
-        headers = {"Cookie": f"PHPSESSID={self.token}"}
+        if not self.token or not self.cookie_name:
+            raise Exception("Session OMV non initialisée")
+
+        headers = {
+            "X-Requested-With": "XMLHttpRequest",
+            "Cookie": f"{self.cookie_name}={self.token}",
+        }
+
         payload = {"service": "DiskMgmt", "method": "getList", "params": {}}
         async with self.session.post(self.base_url, json=payload, headers=headers) as resp:
             data = await resp.json()
-            return data.get("data", [])
+            if not data or "data" not in data:
+                raise Exception(f"Réponse invalide OMV : {data}")
+            return data["data"]
