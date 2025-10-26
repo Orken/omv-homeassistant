@@ -1,5 +1,5 @@
 {
-  "domain": "omv-hass",
+  "domain": "omvhass",
   "name": "OpenMediaVault",
   "version": "0.1.0",
   "documentation": "https://github.com/tonrepo/openmediavault-hass",
