@@ -1,9 +1,12 @@
+import logging
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 import aiohttp
 import async_timeout
 from .const import DOMAIN, PLATFORMS, DEFAULT_SCAN_INTERVAL
+
+_LOGGER = logging.getLogger(__name__)
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry):
     session = aiohttp.ClientSession()
@@ -18,7 +21,7 @@ class OMVCoordinator(DataUpdateCoordinator):
     def __init__(self, hass, session, config):
         super().__init__(
             hass,
-            hass.logger,
+            _LOGGER,  # ✅ correction ici
             name="OpenMediaVault",
             update_interval=DEFAULT_SCAN_INTERVAL,
         )
@@ -39,7 +42,11 @@ class OMVCoordinator(DataUpdateCoordinator):
             raise UpdateFailed(f"Erreur de mise à jour : {err}")
 
     async def _login(self):
-        payload = {"service": "Session", "method": "login", "params": {"username": self.username, "password": self.password}}
+        payload = {
+            "service": "Session",
+            "method": "login",
+            "params": {"username": self.username, "password": self.password},
+        }
         async with self.session.post(self.base_url, json=payload) as resp:
             data = await resp.json()
             if not data.get("response", False):
