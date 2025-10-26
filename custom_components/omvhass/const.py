@@ -1,3 +1,4 @@
 DOMAIN = "omvhass"
 PLATFORMS = ["sensor"]
-DEFAULT_SCAN_INTERVAL = 300  # 5 minutes
+from datetime import timedelta
+DEFAULT_SCAN_INTERVAL = timedelta(seconds=300)
