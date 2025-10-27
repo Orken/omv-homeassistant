@@ -66,8 +66,6 @@ class OMVDiskEntity(CoordinatorEntity):
             "devicefile": disk.get("devicename"),
             "mountpoint": disk.get("mountpoint"),
             "filesystem": disk.get("filesystem_type"),
-            "minimum": 0,
-            "maximum": disk.get("size"),
         }
         for key in ("size_bytes", "available_bytes", "used_bytes"):
             gigabytes = _bytes_to_gigabytes(disk.get(key))
@@ -122,6 +120,19 @@ class OMVDiskStorageSensor(OMVDiskEntity, SensorEntity):
         if size_bytes < 0:
             return 0.0
         return round(size_bytes / _BYTES_PER_GIGABYTE, 6)
+
+    @property
+    def extra_state_attributes(self):
+        attributes = dict(super().extra_state_attributes)
+        attributes["suggested_min_value"] = 0.0
+
+        max_value = _bytes_to_gigabytes(self.disk.get("size_bytes"))
+        if max_value is None:
+            max_value = self.native_value
+        if max_value is not None:
+            attributes["suggested_max_value"] = max_value
+
+        return attributes
 
 
 class OMVDiskUsageSensor(OMVDiskEntity, SensorEntity):
