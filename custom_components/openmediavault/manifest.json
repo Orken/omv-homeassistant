@@ -1,7 +1,7 @@
 {
   "domain": "openmediavault",
   "name": "OpenMediaVault for Home Assistant",
-  "version": "0.2.5",
+  "version": "0.2.6",
   "documentation": "https://github.com/Orken/omv-homeassistant",
   "requirements": [],
   "codeowners": ["@orken"],

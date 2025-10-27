@@ -66,6 +66,8 @@ class OMVDiskEntity(CoordinatorEntity):
             "devicefile": disk.get("devicename"),
             "mountpoint": disk.get("mountpoint"),
             "filesystem": disk.get("filesystem_type"),
+            "minimum": 0,
+            "maximum": disk.get("size"),
         }
         for key in ("size_bytes", "available_bytes", "used_bytes"):
             gigabytes = _bytes_to_gigabytes(disk.get(key))
