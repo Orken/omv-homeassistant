@@ -16,7 +16,7 @@ def test_merge_uses_filesystem_capacity_overrides_disk_size():
     ]
     filesystems = [
         {
-            "devicefile": "/dev/sda",
+            "devicefile": "/dev/sda1",
             "size": "400000000000",
             "available": "150000000000",
             "label": "data",
@@ -52,6 +52,25 @@ def test_merge_keeps_disk_only_data_when_filesystem_missing():
     assert disk["size_bytes"] == 123456789
     assert disk["available_bytes"] is None
     assert "filesystem_label" not in disk
+
+
+def test_nvme_partition_matching():
+    disks = [
+        {
+            "devicename": "nvme0n1",
+            "devicefile": "/dev/nvme0n1",
+            "size": "1000",
+        }
+    ]
+    filesystems = [
+        {"devicefile": "/dev/nvme0n1p1", "size": "900", "available": "100"},
+    ]
+
+    merged = merge_disks_with_filesystems(disks, filesystems)
+    disk = merged[0]
+
+    assert disk["size_bytes"] == 900
+    assert disk["available_bytes"] == 100
 
 
 def test_to_int_handles_empty_and_strings():
