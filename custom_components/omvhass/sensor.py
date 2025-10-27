@@ -27,7 +27,7 @@ class OMVDiskEntity(CoordinatorEntity):
     def __init__(self, coordinator, disk):
         super().__init__(coordinator)
         self._device_name = disk["devicename"]
-        display_name = disk.get("model") or self._device_name
+        display_name = disk.get("description") or self._device_name
         self._attr_device_info = DeviceInfo(
             identifiers={(DOMAIN, self._device_name)},
             manufacturer=disk.get("vendor"),
