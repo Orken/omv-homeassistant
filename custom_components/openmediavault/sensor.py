@@ -1,3 +1,5 @@
+from typing import Any, Optional
+
 from homeassistant.components.sensor import (
     SensorDeviceClass,
     SensorEntity,
@@ -53,7 +55,7 @@ class OMVDiskEntity(CoordinatorEntity):
     def extra_state_attributes(self):
         disk = self.disk
         usage_percent = _usage_percentage(disk)
-        return {
+        attributes = {
             "model": disk.get("model"),
             "size": disk.get("size"),
             "size_bytes": disk.get("size_bytes"),
@@ -65,6 +67,12 @@ class OMVDiskEntity(CoordinatorEntity):
             "mountpoint": disk.get("mountpoint"),
             "filesystem": disk.get("filesystem_type"),
         }
+        for key in ("size_bytes", "available_bytes", "used_bytes"):
+            gigabytes = _bytes_to_gigabytes(disk.get(key))
+            if gigabytes is not None:
+                attributes[key.replace("_bytes", "_gb")] = gigabytes
+
+        return attributes
 
 
 class OMVDiskTemperatureSensor(OMVDiskEntity, SensorEntity):
@@ -125,6 +133,16 @@ class OMVDiskUsageSensor(OMVDiskEntity, SensorEntity):
     @property
     def native_value(self):
         return _usage_percentage(self.disk)
+
+
+def _bytes_to_gigabytes(value: Any) -> Optional[float]:
+    try:
+        bytes_value = int(value)
+    except (TypeError, ValueError):
+        return None
+    if bytes_value < 0:
+        return 0.0
+    return round(bytes_value / _BYTES_PER_GIGABYTE, 6)
 
 
 def _usage_percentage(disk):
