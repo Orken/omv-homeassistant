@@ -3,10 +3,11 @@ from homeassistant.components.sensor import (
     SensorEntity,
     SensorStateClass,
 )
-from homeassistant.const import UnitOfInformation, UnitOfTemperature
+from homeassistant.const import PERCENTAGE, UnitOfInformation, UnitOfTemperature
 from homeassistant.helpers.entity import DeviceInfo
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 from .const import DOMAIN
+
 
 async def async_setup_entry(hass, entry, async_add_entities):
     coordinator = hass.data[DOMAIN][entry.entry_id]
@@ -21,7 +22,10 @@ async def async_setup_entry(hass, entry, async_add_entities):
             sensors.append(
                 OMVDiskStorageSensor(coordinator, disk, measurement="available")
             )
+        if disk.get("size_bytes") is not None:
+            sensors.append(OMVDiskUsageSensor(coordinator, disk))
     async_add_entities(sensors)
+
 
 class OMVDiskEntity(CoordinatorEntity):
     def __init__(self, coordinator, disk):
@@ -46,17 +50,20 @@ class OMVDiskEntity(CoordinatorEntity):
     @property
     def extra_state_attributes(self):
         disk = self.disk
+        usage_percent = _usage_percentage(disk)
         return {
             "model": disk.get("model"),
             "size": disk.get("size"),
             "size_bytes": disk.get("size_bytes"),
             "available_bytes": disk.get("available_bytes"),
             "used_bytes": disk.get("used_bytes"),
+            "usage_percent": usage_percent,
             "status": disk.get("status"),
             "devicefile": disk.get("devicename"),
             "mountpoint": disk.get("mountpoint"),
             "filesystem": disk.get("filesystem_type"),
         }
+
 
 class OMVDiskTemperatureSensor(OMVDiskEntity, SensorEntity):
     def __init__(self, coordinator, disk):
@@ -74,6 +81,7 @@ class OMVDiskTemperatureSensor(OMVDiskEntity, SensorEntity):
             return float(temp)
         except (TypeError, ValueError):
             return None
+
 
 class OMVDiskStorageSensor(OMVDiskEntity, SensorEntity):
     def __init__(self, coordinator, disk, measurement):
@@ -98,3 +106,51 @@ class OMVDiskStorageSensor(OMVDiskEntity, SensorEntity):
             return int(value)
         except (TypeError, ValueError):
             return None
+
+
+class OMVDiskUsageSensor(OMVDiskEntity, SensorEntity):
+    def __init__(self, coordinator, disk):
+        super().__init__(coordinator, disk)
+        self._attr_name = f"OMV {disk['devicename']} Usage"
+        self._attr_unique_id = f"omv_disk_{disk['devicename']}_usage"
+        self._attr_state_class = SensorStateClass.MEASUREMENT
+        self._attr_native_unit_of_measurement = PERCENTAGE
+
+    @property
+    def native_value(self):
+        return _usage_percentage(self.disk)
+
+
+def _usage_percentage(disk):
+    size = disk.get("size_bytes")
+    try:
+        size = int(size)
+    except (TypeError, ValueError):
+        return None
+    if size <= 0:
+        return None
+
+    used = disk.get("used_bytes")
+    available = disk.get("available_bytes")
+
+    try:
+        used = int(used) if used is not None else None
+    except (TypeError, ValueError):
+        used = None
+
+    if used is None and available is not None:
+        try:
+            available = int(available)
+            used = size - available
+        except (TypeError, ValueError):
+            return None
+
+    if used is None:
+        return None
+
+    if used < 0:
+        used = 0
+    if used > size:
+        used = size
+
+    return round((used / size) * 100, 2)

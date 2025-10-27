@@ -5,6 +5,7 @@ Cette intégration custom Home Assistant expose l’état de vos disques OpenMed
 ## ✨ Fonctionnalités
 - 🔥 Capteurs de température par disque avec mise à jour automatique.
 - 💾 Deux capteurs d’espace (total & disponible) pour chaque disque détecté.
+- 📉 Calcul du pourcentage d’occupation à partir de la capacité utilisée.
 - 📊 Attributs détaillés : modèle, statut, point de montage, type de FS, octets utilisés.
 
 ## 🚀 Installation
