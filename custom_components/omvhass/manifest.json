@@ -1,12 +1,10 @@
 {
   "domain": "omvhass",
   "name": "OpenMediaVault for Home Assistant",
-  "version": "0.1.9",
-  "documentation": "https://github.com/tonrepo/openmediavault-hass",
+  "version": "0.2.0",
+  "documentation": "https://github.com/Orken/omv-homeassistant",
   "requirements": [],
   "codeowners": ["@orken"],
   "iot_class": "local_polling",
-  "config_flow": true,
-  "icon": "icons/icon.png",
-  "logo": "icons/logo.png"
+  "config_flow": true
 }
