@@ -8,6 +8,8 @@ from homeassistant.helpers.entity import DeviceInfo
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 from .const import DOMAIN
 
+_BYTES_PER_GIGABYTE = 1024**3
+
 
 async def async_setup_entry(hass, entry, async_add_entities):
     coordinator = hass.data[DOMAIN][entry.entry_id]
@@ -93,7 +95,8 @@ class OMVDiskStorageSensor(OMVDiskEntity, SensorEntity):
         self._attr_unique_id = f"omv_disk_{disk['devicename']}_{suffix}"
         self._attr_device_class = SensorDeviceClass.DATA_SIZE
         self._attr_state_class = SensorStateClass.MEASUREMENT
-        self._attr_native_unit_of_measurement = UnitOfInformation.BYTES
+        self._attr_native_unit_of_measurement = UnitOfInformation.GIGABYTES
+        self._attr_suggested_display_precision = 3
 
     @property
     def native_value(self):
@@ -103,9 +106,12 @@ class OMVDiskStorageSensor(OMVDiskEntity, SensorEntity):
         if value is None:
             return None
         try:
-            return int(value)
+            size_bytes = int(value)
         except (TypeError, ValueError):
             return None
+        if size_bytes < 0:
+            return 0.0
+        return round(size_bytes / _BYTES_PER_GIGABYTE, 6)
 
 
 class OMVDiskUsageSensor(OMVDiskEntity, SensorEntity):
