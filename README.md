@@ -38,9 +38,3 @@ python3 -m venv .venv && source .venv/bin/activate
 pip install homeassistant pytest
 pytest tests -q
 ```
-Respectez PEP 8 (indentation 4 espaces) et consultez `AGENTS.md` pour les règles détaillées. Avant toute PR, exécutez `pytest` et décrivez les capteurs ajoutés ou modifiés.
-
-## 🤝 Contribution
-- Utilisez des messages de commit courts avec emoji + verbe (ex : `### 🔧 Ajuster le scan interval`).  
-- Les PR doivent inclure un résumé, les tests exécutés et, si possible, une capture d’écran Home Assistant.  
-- Ouvrez une issue pour discuter des nouvelles métriques (RAID, SMART, etc.) avant de coder. Merci d’aider la communauté Home Assistant 🇫🇷 !
