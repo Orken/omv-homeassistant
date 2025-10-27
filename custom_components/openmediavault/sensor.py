@@ -58,19 +58,20 @@ class OMVDiskEntity(CoordinatorEntity):
         attributes = {
             "model": disk.get("model"),
             "size": disk.get("size"),
-            "size_bytes": disk.get("size_bytes"),
-            "available_bytes": disk.get("available_bytes"),
-            "used_bytes": disk.get("used_bytes"),
             "usage_percent": usage_percent,
             "status": disk.get("status"),
             "devicefile": disk.get("devicename"),
             "mountpoint": disk.get("mountpoint"),
             "filesystem": disk.get("filesystem_type"),
         }
-        for key in ("size_bytes", "available_bytes", "used_bytes"):
-            gigabytes = _bytes_to_gigabytes(disk.get(key))
+        for source_key, target_key in (
+            ("size_bytes", "size_gb"),
+            ("available_bytes", "available_gb"),
+            ("used_bytes", "used_gb"),
+        ):
+            gigabytes = _bytes_to_gigabytes(disk.get(source_key))
             if gigabytes is not None:
-                attributes[key.replace("_bytes", "_gb")] = gigabytes
+                attributes[target_key] = gigabytes
 
         return attributes
 
@@ -119,7 +120,7 @@ class OMVDiskStorageSensor(OMVDiskEntity, SensorEntity):
             return None
         if size_bytes < 0:
             return 0.0
-        return round(size_bytes / _BYTES_PER_GIGABYTE, 6)
+        return round(size_bytes / _BYTES_PER_GIGABYTE, 3)
 
     @property
     def extra_state_attributes(self):
@@ -155,7 +156,7 @@ def _bytes_to_gigabytes(value: Any) -> Optional[float]:
         return None
     if bytes_value < 0:
         return 0.0
-    return round(bytes_value / _BYTES_PER_GIGABYTE, 6)
+    return round(bytes_value / _BYTES_PER_GIGABYTE, 3)
 
 
 def _usage_percentage(disk):
