@@ -6,6 +6,7 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 from .const import DOMAIN, PLATFORMS, DEFAULT_SCAN_INTERVAL
+from .omv import merge_disks_with_filesystems
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -49,14 +50,17 @@ class OMVCoordinator(DataUpdateCoordinator):
                     await self._login()
                 try:
                     disks = await self._get_disks()
+                    filesystems = await self._get_filesystems()
                 except Exception:
                     # Si la session a expiré, on réessaie une fois
                     _LOGGER.warning("Session OMV expirée, reconnexion...")
                     await self._login()
                     disks = await self._get_disks()
+                    filesystems = await self._get_filesystems()
 
-                _LOGGER.debug("OMV data retrieved: %s", disks)
-                return disks
+                merged = merge_disks_with_filesystems(disks, filesystems)
+                _LOGGER.debug("OMV data retrieved: %s", merged)
+                return merged
         except Exception as err:
             raise UpdateFailed(f"Erreur de mise à jour : {err}")
 
@@ -124,3 +128,34 @@ class OMVCoordinator(DataUpdateCoordinator):
                 raise Exception(f"Réponse invalide OMV : {data}")
 
             return disks
+
+    async def _get_filesystems(self):
+        """Retrieve filesystem stats for each disk."""
+        if not self.token or not self.cookie_name:
+            raise Exception("Session OMV non initialisée")
+
+        headers = {
+            "X-Requested-With": "XMLHttpRequest",
+            "Cookie": f"{self.cookie_name}={self.token}",
+        }
+
+        payload = {
+            "service": "FileSystemMgmt",
+            "method": "getList",
+            "params": {
+                "start": 0,
+                "limit": -1,
+                "sortfield": "",
+                "sortdir": "asc",
+            },
+        }
+
+        async with self.session.post(self.base_url, json=payload, headers=headers) as resp:
+            data = await resp.json()
+            response = data.get("response") or {}
+            filesystems = response.get("data") or response.get("response") or []
+
+            if not isinstance(filesystems, list):
+                raise Exception(f"Réponse invalide OMV (filesystem): {data}")
+
+            return filesystems
