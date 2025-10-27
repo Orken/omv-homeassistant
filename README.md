@@ -1,19 +1,20 @@
 # 📦 Intégration OpenMediaVault pour Home Assistant
 
-Cette intégration custom Home Assistant expose l’état de vos disques OpenMediaVault (température, capacité totale et disponible) via l’API RPC native d’OMV. Elle s’installe via HACS ou en copiant le dossier `custom_components/omvhass`.
+Cette intégration custom Home Assistant expose l’état de vos disques OpenMediaVault (température, capacité totale et disponible) via l’API RPC native d’OMV. Elle s’installe via HACS ou en copiant le dossier `custom_components/openmediavault`.
 
 ## ✨ Fonctionnalités
 - 🔥 Capteurs de température par disque avec mise à jour automatique.
 - 💾 Deux capteurs d’espace (total & disponible) pour chaque disque détecté.
 - 📉 Calcul du pourcentage d’occupation à partir de la capacité utilisée.
-- 📊 Attributs détaillés : modèle, statut, point de montage, type de FS, octets utilisés.
+- 📊 Attributs détaillés : modèle, statut, point de montage, type de FS, tailles en Go (total/disponible/utilisé).
+- 🎯 Valeurs recommandées min/max pour un affichage graphique cohérent.
 
 ## 🚀 Installation
 1. **HACS (recommandé)**  
    - Ajoutez ce dépôt en tant que *Custom Repository* (catégorie *Integration*).  
    - Installez *OpenMediaVault for Home Assistant* depuis HACS puis redémarrez Home Assistant.
 2. **Manuel**  
-   - Copiez `custom_components/omvhass` dans le dossier `custom_components/` de votre instance HA.  
+   - Copiez `custom_components/openmediavault` dans le dossier `custom_components/` de votre instance HA.  
    - Redémarrez Home Assistant pour charger l’intégration.
 
 ## 🛠 Configuration
@@ -23,7 +24,7 @@ Cette intégration custom Home Assistant expose l’état de vos disques OpenMed
 
 ## 📁 Structure du dépôt
 ```
-custom_components/omvhass/
+custom_components/openmediavault/
 ├── __init__.py        # Coordinator + appels RPC OMV
 ├── sensor.py          # Entités Home Assistant (température & capacité)
 ├── config_flow.py     # Formulaire de configuration UI
