@@ -36,8 +36,8 @@ class OMVDiskEntity(CoordinatorEntity):
         super().__init__(coordinator)
         self._disk_id = disk.get("disk_id") or disk.get("devicename") or ""
         self._disk_uuid = (
-            disk.get("filesystem_uuid")
-            or disk.get("uuid")
+            disk.get("uuid")
+            or disk.get("filesystem_uuid")
             or self._disk_id
             or disk.get("devicename")
             or ""

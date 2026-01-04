@@ -40,7 +40,7 @@ def merge_disks_with_filesystems(
             disk_copy["filesystem_type"] = filesystem.get("type")
             disk_copy["filesystem_uuid"] = _normalize_identifier(filesystem.get("uuid"))
 
-        disk_copy["disk_id"] = _stable_disk_identifier(disk_copy, filesystem)
+        disk_copy["disk_id"] = _stable_disk_identifier(disk_copy)
 
         disk_copy["size_bytes"] = size_bytes
         disk_copy["available_bytes"] = available_bytes
@@ -57,33 +57,44 @@ def _find_matching_filesystem(
 ) -> Optional[Dict[str, Any]]:
     """Best-effort match between a physical disk and filesystem entries."""
     disk_keys = _device_aliases(
-        [
-            disk.get("devicefile"),
-            disk.get("canonicaldevicefile"),
-            disk.get("devicename"),
-        ]
+        _flatten_values(
+            [
+                disk.get("devicefile"),
+                disk.get("canonicaldevicefile"),
+                disk.get("devicename"),
+                disk.get("devicelinks"),
+            ]
+        )
     )
     if not disk_keys:
         return None
 
-    best_match = None
     for fs in filesystems:
         fs_keys = _device_aliases(
-            [fs.get("devicefile"), fs.get("canonicaldevicefile"), fs.get("uuid")]
+            _flatten_values(
+                [
+                    fs.get("parentdevicefile"),
+                    fs.get("canonicaldevicefile"),
+                    fs.get("devicefile"),
+                    fs.get("devicename"),
+                    fs.get("devicefiles"),
+                    fs.get("devlinks"),
+                    fs.get("uuid"),
+                ]
+            )
         )
         if not fs_keys:
             continue
         if disk_keys & fs_keys:
             # Prefer the first exact/alias match
-            best_match = fs
-            break
+            return fs
 
         # Fallback: check if filesystem device starts with disk root (e.g. /dev/sda1 vs /dev/sda)
-        fs_devicefile = fs.get("devicefile")
-        if _filesystem_matches_disk_prefix(fs_devicefile, disk_keys):
-            best_match = fs
+        for candidate in (fs.get("parentdevicefile"), fs.get("canonicaldevicefile")):
+            if _filesystem_matches_disk_prefix(candidate, disk_keys):
+                return fs
 
-    return best_match
+    return None
 
 
 def _device_aliases(values: Sequence[Optional[str]]) -> Set[str]:
@@ -97,6 +108,20 @@ def _device_aliases(values: Sequence[Optional[str]]) -> Set[str]:
             aliases.add(value.replace("/dev/", "", 1))
         aliases.add(_strip_partition_suffix(os.path.basename(value)))
     return {alias for alias in aliases if alias}
+
+
+def _flatten_values(values: Sequence[Any]) -> List[Optional[str]]:
+    flattened: List[Optional[str]] = []
+    for value in values:
+        if not value:
+            continue
+        if isinstance(value, (list, tuple, set)):
+            for item in value:
+                if item:
+                    flattened.append(item)
+            continue
+        flattened.append(value)
+    return flattened
 
 
 def _strip_partition_suffix(name: str) -> str:
@@ -131,11 +156,9 @@ def _filesystem_available(fs: Dict[str, Any]) -> Optional[int]:
     return None
 
 
-def _stable_disk_identifier(
-    disk: Dict[str, Any], filesystem: Optional[Dict[str, Any]]
-) -> str:
+def _stable_disk_identifier(disk: Dict[str, Any]) -> str:
     candidates = [
-        filesystem.get("uuid") if filesystem else None,
+        disk.get("filesystem_uuid"),
         disk.get("uuid"),
         disk.get("serialnumber"),
         disk.get("serial"),
