@@ -7,6 +7,7 @@ Cette intégration custom Home Assistant expose l’état de vos disques OpenMed
 - 💾 Deux capteurs d’espace (total & disponible) pour chaque disque détecté.
 - 📉 Calcul du pourcentage d’occupation à partir de la capacité utilisée.
 - 📊 Attributs détaillés : modèle, statut, point de montage, type de FS, tailles en Go (total/disponible/utilisé).
+- 🆔 Identifiants stables basés sur l’UUID du système de fichiers (ou identifiant matériel) pour éviter les changements liés à l’ordre `/dev/sdX`.
 - 🎯 Valeurs recommandées min/max pour un affichage graphique cohérent.
 
 ## 🚀 Installation
