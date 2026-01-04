@@ -65,6 +65,10 @@ def _find_matching_filesystem(
             return fs
         if disk_canonical and fs.get("canonicaldevicefile") == disk_canonical:
             return fs
+        if disk_canonical and fs.get("parentdevicefile") == disk_canonical:
+            return fs
+        if disk_devicename and fs.get("parentdevicefile", "").endswith(f"/{disk_devicename}"):
+            return fs
     return None
 
 
