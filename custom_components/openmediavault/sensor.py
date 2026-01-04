@@ -115,7 +115,7 @@ class OMVDiskStorageSensor(OMVDiskEntity, SensorEntity):
         label = "Total Size" if measurement == "total" else "Available Size"
         suffix = "total" if measurement == "total" else "available"
         self._measurement = measurement
-        self._attr_name = f"OMV {self._display_name} {label}"
+        self._attr_name = f"OMV {self._display_name} ({self._object_id}) {label}"
         self._attr_unique_id = f"omv_disk_{self._object_id}_{suffix}"
         self._attr_suggested_object_id = f"omv_{self._object_id}_{suffix}_size"
         self._attr_device_class = SensorDeviceClass.DATA_SIZE
@@ -155,7 +155,7 @@ class OMVDiskStorageSensor(OMVDiskEntity, SensorEntity):
 class OMVDiskUsageSensor(OMVDiskEntity, SensorEntity):
     def __init__(self, coordinator, disk):
         super().__init__(coordinator, disk)
-        self._attr_name = f"OMV {self._display_name} Usage"
+        self._attr_name = f"OMV {self._display_name} ({self._object_id}) Usage"
         self._attr_unique_id = f"omv_disk_{self._object_id}_usage"
         self._attr_suggested_object_id = f"omv_{self._object_id}_usage"
         self._attr_state_class = SensorStateClass.MEASUREMENT
