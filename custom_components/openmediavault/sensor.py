@@ -44,7 +44,7 @@ class OMVDiskEntity(CoordinatorEntity):
             or ""
         )
         self._object_id = (
-            _normalize_identifier(disk.get("serialnumber")) or self._disk_uuid
+            _normalize_identifier(disk.get("serialnumber"))
         )
         self._device_name = disk.get("devicename") or ""
         self._display_name = disk.get("model") or disk.get("description") or self._device_name
@@ -94,7 +94,7 @@ class OMVDiskTemperatureSensor(OMVDiskEntity, SensorEntity):
     def __init__(self, coordinator, disk):
         super().__init__(coordinator, disk)
         self._attr_name = f"OMV {self._display_name} Temperature"
-        self._attr_unique_id = f"omv_disk_{self._disk_uuid}_temperature"
+        self._attr_unique_id = f"omv_disk_{self._object_id}_temperature"
         self._attr_suggested_object_id = f"omv_{self._object_id}_temperature"
         self._attr_device_class = SensorDeviceClass.TEMPERATURE
         self._attr_state_class = SensorStateClass.MEASUREMENT
@@ -116,7 +116,7 @@ class OMVDiskStorageSensor(OMVDiskEntity, SensorEntity):
         suffix = "total" if measurement == "total" else "available"
         self._measurement = measurement
         self._attr_name = f"OMV {self._display_name} {label}"
-        self._attr_unique_id = f"omv_disk_{self._disk_uuid}_{suffix}"
+        self._attr_unique_id = f"omv_disk_{self._object_id}_{suffix}"
         self._attr_suggested_object_id = f"omv_{self._object_id}_{suffix}_size"
         self._attr_device_class = SensorDeviceClass.DATA_SIZE
         self._attr_state_class = SensorStateClass.MEASUREMENT
@@ -156,7 +156,7 @@ class OMVDiskUsageSensor(OMVDiskEntity, SensorEntity):
     def __init__(self, coordinator, disk):
         super().__init__(coordinator, disk)
         self._attr_name = f"OMV {self._display_name} Usage"
-        self._attr_unique_id = f"omv_disk_{self._disk_uuid}_usage"
+        self._attr_unique_id = f"omv_disk_{self._object_id}_usage"
         self._attr_suggested_object_id = f"omv_{self._object_id}_usage"
         self._attr_state_class = SensorStateClass.MEASUREMENT
         self._attr_native_unit_of_measurement = PERCENTAGE
