@@ -38,6 +38,9 @@ def merge_disks_with_filesystems(
             disk_copy["filesystem_label"] = filesystem.get("label")
             disk_copy["mountpoint"] = filesystem.get("mountpoint")
             disk_copy["filesystem_type"] = filesystem.get("type")
+            disk_copy["filesystem_uuid"] = filesystem.get("uuid")
+
+        disk_copy["disk_id"] = _stable_disk_identifier(disk_copy, filesystem)
 
         disk_copy["size_bytes"] = size_bytes
         disk_copy["available_bytes"] = available_bytes
@@ -126,3 +129,33 @@ def _filesystem_available(fs: Dict[str, Any]) -> Optional[int]:
             if value is not None:
                 return value
     return None
+
+
+def _stable_disk_identifier(
+    disk: Dict[str, Any], filesystem: Optional[Dict[str, Any]]
+) -> str:
+    candidates = [
+        filesystem.get("uuid") if filesystem else None,
+        disk.get("uuid"),
+        disk.get("serialnumber"),
+        disk.get("serial"),
+        disk.get("wwn"),
+        disk.get("devicefile"),
+        disk.get("devicename"),
+    ]
+    for candidate in candidates:
+        normalized = _normalize_identifier(candidate)
+        if normalized:
+            return normalized
+    return ""
+
+
+def _normalize_identifier(value: Optional[str]) -> str:
+    if not value:
+        return ""
+    normalized = value.strip().lower()
+    if normalized.startswith("/dev/"):
+        normalized = normalized.replace("/dev/", "", 1)
+    normalized = re.sub(r"\s+", "_", normalized)
+    normalized = re.sub(r"[^a-z0-9_-]", "_", normalized)
+    return normalized
