@@ -35,8 +35,19 @@ class OMVDiskEntity(CoordinatorEntity):
     def __init__(self, coordinator, disk):
         super().__init__(coordinator)
         self._disk_id = disk.get("disk_id") or disk.get("devicename") or ""
+        self._disk_uuid = (
+            disk.get("filesystem_uuid")
+            or disk.get("uuid")
+            or self._disk_id
+            or disk.get("devicename")
+            or ""
+        )
         self._device_name = disk.get("devicename") or self._disk_id
-        display_name = disk.get("description") or self._device_name
+        display_name = (
+            disk.get("model")
+            or disk.get("description")
+            or self._device_name
+        )
         self._attr_device_info = DeviceInfo(
             identifiers={(DOMAIN, self._disk_id)},
             manufacturer=disk.get("vendor"),
@@ -82,8 +93,9 @@ class OMVDiskEntity(CoordinatorEntity):
 class OMVDiskTemperatureSensor(OMVDiskEntity, SensorEntity):
     def __init__(self, coordinator, disk):
         super().__init__(coordinator, disk)
-        self._attr_name = f"OMV {disk['devicename']} Temperature"
-        self._attr_unique_id = f"omv_disk_{self._disk_id}_temperature"
+        self._attr_name = f"OMV {self._device_name} Temperature"
+        self._attr_unique_id = f"omv_disk_{self._disk_uuid}_temperature"
+        self._attr_suggested_object_id = f"omv_{self._disk_uuid}_temperature"
         self._attr_device_class = SensorDeviceClass.TEMPERATURE
         self._attr_state_class = SensorStateClass.MEASUREMENT
         self._attr_native_unit_of_measurement = UnitOfTemperature.CELSIUS
@@ -103,8 +115,9 @@ class OMVDiskStorageSensor(OMVDiskEntity, SensorEntity):
         label = "Total Size" if measurement == "total" else "Available Size"
         suffix = "total" if measurement == "total" else "available"
         self._measurement = measurement
-        self._attr_name = f"OMV {disk['devicename']} {label}"
-        self._attr_unique_id = f"omv_disk_{self._disk_id}_{suffix}"
+        self._attr_name = f"OMV {self._device_name} {label}"
+        self._attr_unique_id = f"omv_disk_{self._disk_uuid}_{suffix}"
+        self._attr_suggested_object_id = f"omv_{self._disk_uuid}_{suffix}_size"
         self._attr_device_class = SensorDeviceClass.DATA_SIZE
         self._attr_state_class = SensorStateClass.MEASUREMENT
         self._attr_native_unit_of_measurement = UnitOfInformation.GIGABYTES
@@ -142,8 +155,9 @@ class OMVDiskStorageSensor(OMVDiskEntity, SensorEntity):
 class OMVDiskUsageSensor(OMVDiskEntity, SensorEntity):
     def __init__(self, coordinator, disk):
         super().__init__(coordinator, disk)
-        self._attr_name = f"OMV {disk['devicename']} Usage"
-        self._attr_unique_id = f"omv_disk_{self._disk_id}_usage"
+        self._attr_name = f"OMV {self._device_name} Usage"
+        self._attr_unique_id = f"omv_disk_{self._disk_uuid}_usage"
+        self._attr_suggested_object_id = f"omv_{self._disk_uuid}_usage"
         self._attr_state_class = SensorStateClass.MEASUREMENT
         self._attr_native_unit_of_measurement = PERCENTAGE
 

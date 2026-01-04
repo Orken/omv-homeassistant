@@ -38,7 +38,7 @@ def merge_disks_with_filesystems(
             disk_copy["filesystem_label"] = filesystem.get("label")
             disk_copy["mountpoint"] = filesystem.get("mountpoint")
             disk_copy["filesystem_type"] = filesystem.get("type")
-            disk_copy["filesystem_uuid"] = filesystem.get("uuid")
+            disk_copy["filesystem_uuid"] = _normalize_identifier(filesystem.get("uuid"))
 
         disk_copy["disk_id"] = _stable_disk_identifier(disk_copy, filesystem)
 
