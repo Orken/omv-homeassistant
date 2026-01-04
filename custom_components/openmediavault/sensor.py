@@ -93,9 +93,9 @@ class OMVDiskEntity(CoordinatorEntity):
 class OMVDiskTemperatureSensor(OMVDiskEntity, SensorEntity):
     def __init__(self, coordinator, disk):
         super().__init__(coordinator, disk)
-        self._attr_name = f"OMV {self._display_name} Temperature"
-        self._attr_unique_id = f"omv_disk_{self._object_id}_{self._object_id}_temperature"
-        self._attr_suggested_object_id = f"omv2_{self._object_id}_{self._object_id}_temperature"
+        self._attr_name = f"OMV {self._display_name} ({self._object_id}) Temperature"
+        self._attr_unique_id = f"omv_disk_{self._object_id}_temperature"
+        self._attr_suggested_object_id = f"omv_{self._object_id}_temperature"
         self._attr_device_class = SensorDeviceClass.TEMPERATURE
         self._attr_state_class = SensorStateClass.MEASUREMENT
         self._attr_native_unit_of_measurement = UnitOfTemperature.CELSIUS
