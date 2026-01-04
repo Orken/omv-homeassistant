@@ -2,9 +2,8 @@
 
 from __future__ import annotations
 
-import os
 import re
-from typing import Any, Dict, Iterable, List, Optional, Sequence, Set
+from typing import Any, Dict, Iterable, List, Optional
 
 
 def to_int(value: Any) -> int | None:
@@ -55,94 +54,18 @@ def merge_disks_with_filesystems(
 def _find_matching_filesystem(
     disk: Dict[str, Any], filesystems: Iterable[Dict[str, Any]]
 ) -> Optional[Dict[str, Any]]:
-    """Best-effort match between a physical disk and filesystem entries."""
-    disk_keys = _device_aliases(
-        _flatten_values(
-            [
-                disk.get("devicefile"),
-                disk.get("canonicaldevicefile"),
-                disk.get("devicename"),
-                disk.get("devicelinks"),
-            ]
-        )
-    )
-    if not disk_keys:
+    """Match filesystem entry by devicename or canonical device file (exact)."""
+    disk_devicename = disk.get("devicename")
+    disk_canonical = disk.get("canonicaldevicefile")
+    if not disk_devicename and not disk_canonical:
         return None
 
     for fs in filesystems:
-        fs_keys = _device_aliases(
-            _flatten_values(
-                [
-                    fs.get("parentdevicefile"),
-                    fs.get("canonicaldevicefile"),
-                    fs.get("devicefile"),
-                    fs.get("devicename"),
-                    fs.get("devicefiles"),
-                    fs.get("devlinks"),
-                    fs.get("uuid"),
-                ]
-            )
-        )
-        if not fs_keys:
-            continue
-        if disk_keys & fs_keys:
-            # Prefer the first exact/alias match
+        if disk_devicename and fs.get("devicename") == disk_devicename:
             return fs
-
-        # Fallback: check if filesystem device starts with disk root (e.g. /dev/sda1 vs /dev/sda)
-        for candidate in (fs.get("parentdevicefile"), fs.get("canonicaldevicefile")):
-            if _filesystem_matches_disk_prefix(candidate, disk_keys):
-                return fs
-
+        if disk_canonical and fs.get("canonicaldevicefile") == disk_canonical:
+            return fs
     return None
-
-
-def _device_aliases(values: Sequence[Optional[str]]) -> Set[str]:
-    aliases: Set[str] = set()
-    for value in values:
-        if not value:
-            continue
-        aliases.add(value)
-        aliases.add(os.path.basename(value))
-        if value.startswith("/dev/"):
-            aliases.add(value.replace("/dev/", "", 1))
-        aliases.add(_strip_partition_suffix(os.path.basename(value)))
-    return {alias for alias in aliases if alias}
-
-
-def _flatten_values(values: Sequence[Any]) -> List[Optional[str]]:
-    flattened: List[Optional[str]] = []
-    for value in values:
-        if not value:
-            continue
-        if isinstance(value, (list, tuple, set)):
-            for item in value:
-                if item:
-                    flattened.append(item)
-            continue
-        flattened.append(value)
-    return flattened
-
-
-def _strip_partition_suffix(name: str) -> str:
-    if not name:
-        return name
-    # NVMe disks end with 'pX'. md arrays may end with 'pX'. Standard disks end with digits.
-    name = re.sub(r"p\d+$", "", name)
-    return re.sub(r"\d+$", "", name)
-
-
-def _filesystem_matches_disk_prefix(devicefile: Optional[str], disk_keys: Set[str]) -> bool:
-    if not devicefile:
-        return False
-    for key in disk_keys:
-        if not key:
-            continue
-        if devicefile.startswith(key):
-            return True
-        if key.startswith("/dev/") and devicefile.startswith(key.replace("/dev/", "", 1)):
-            return True
-    return False
 
 
 def _filesystem_available(fs: Dict[str, Any]) -> Optional[int]:
